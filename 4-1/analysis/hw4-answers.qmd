@@ -1,0 +1,24 @@
+---
+title: "Homework 4"
+subtitle: "Research in Health Economics, Spring 2025"
+author: "Lisbeth Vargas"
+format:
+    pdf: 
+        output-file: "vargas-hwk4-1"
+        output-ext: "pdf"
+        header-includes: 
+            - \usepackage{float}
+            - \floatplacement{table}{H}
+knitr:
+    opts_chunk:
+        warning: false
+
+---
+```{r}
+#| include: false
+#| eval:  true
+
+final.data <- readRDS("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/final_ma_data.rds")
+load("/Users/lisbethvargas/Desktop/Homework-4/4-1/analysis/hwk4_workspace.Rdata")
+```
+

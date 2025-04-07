@@ -1,0 +1,10 @@
+# Meta --------------------------------------------------------------------
+# Author:        Lisbeth Vargas
+# Date Created:  4/7/2025
+# Date Edited:   4/7/2025
+# Homework 4-1
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata, scales)
+
+final.data <- readRDS("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/final_ma_data.rds")
