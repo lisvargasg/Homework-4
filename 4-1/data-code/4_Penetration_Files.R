@@ -21,14 +21,14 @@ monthlist_2015=c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11
 
 
 ## Read in monthly files, append to yearly file, fill in missing info, and collapse down to yearly file
-for (y in 2008:2015) {
+for (y in 2010:2015) {
   monthlist=get(paste0("monthlist_",y))
   step=0
   for (m in monthlist) {
     step=step+1
     
     ## Pull market penetration data by contract/month
-    ma.path=paste0("data/input/monthly-ma-state-and-county-penetration/State_County_Penetration_MA_",y,"_",m,".csv")
+    ma.path=paste0("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/input/monthly-ma-state-and-county-penetration/State_County_Penetration_MA_",y,"_",m,".csv")
     pene.data=read_csv(ma.path,skip=1,
                        col_names=c("state","county","fips_state","fips_cnty","fips",
                                    "ssa_state","ssa_cnty","ssa","eligibles","enrolled",
@@ -78,4 +78,4 @@ for (y in 2008:2015) {
 
 ma.penetration.data=rbind(ma.pene.2008,ma.pene.2009,ma.pene.2010,
                           ma.pene.2011,ma.pene.2012,ma.pene.2013,ma.pene.2014,ma.pene.2015)
-write_rds(ma.penetration.data,"data/output/ma_penetration.rds")
+write_rds(ma.penetration.data,"/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/ma_penetration.rds")

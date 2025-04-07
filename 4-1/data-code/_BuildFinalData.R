@@ -12,7 +12,6 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata)
 
 
-
 # Call individual scripts -------------------------------------------------
 
 source("data-code/1_Plan_Data.R")
@@ -27,15 +26,15 @@ source("data-code/8_FFS_Costs.R")
 
 
 # Tidy data ---------------------------------------------------------------
-full.ma.data <- read_rds("data/output/full_ma_data.rds")
-contract.service.area <- read_rds("data/output/contract_service_area.rds")
-star.ratings <- read_rds("data/output/star_ratings.rds")
-ma.penetration.data <- read_rds("data/output/ma_penetration.rds")
-plan.premiums <- read_rds("data/output/plan_premiums.rds")
-risk.rebate.final <- read_rds("data/output/risk_rebate.rds")
-benchmark.final <- read_rds("data/output/ma_benchmark.rds") %>%
+full.ma.data <- read_rds("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/full_ma_data.rds")
+contract.service.area <- read_rds("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/contract_service_area.rds")
+star.ratings <- read_rds("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/star_ratings.rds")
+ma.penetration.data <- read_rds("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/ma_penetration.rds")
+plan.premiums <- read_rds("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/plan_premiums.rds")
+risk.rebate.final <- read_rds("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/risk_rebate.rds")
+benchmark.final <- read_rds("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/ma_benchmark.rds") %>%
   mutate(ssa=as.double(ssa))
-ffs.costs.final <- read_rds("data/output/ffs_costs.rds")
+ffs.costs.final <- read_rds("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/ffs_costs.rds")
 
 final.data <- full.ma.data %>%
   inner_join(contract.service.area %>% 
@@ -126,4 +125,4 @@ final.data <- final.data %>%
     TRUE ~ NA_real_))
 
 # save final dataset
-write_rds(final.data,"data/output/final_ma_data.rds")
+write_rds(final.data,"/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/final_ma_data.rds")
