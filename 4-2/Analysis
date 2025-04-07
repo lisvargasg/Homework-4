@@ -97,4 +97,4 @@ q4 <- ggplot(average_share_by_year, aes(x = year, y = avg_share)) +
 
 ## CREATE WORKSPACE
 rm(list=c("final.data"))
-save.image("/Users/lisbethvargas/Desktop/Homework-4/4-1/analysis/hwk4_workspace.Rdata")
+save.image("/Users/lisbethvargas/Desktop/Homework-4/4-2/hwk4_workspace.Rdata")
