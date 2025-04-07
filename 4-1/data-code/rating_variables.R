@@ -1,7 +1,7 @@
 ########################################################################################
 ## Author:        Lisbeth Vargas
 ## Date Created:  4/6/2025
-## Date Edited:   4/6/2025
+## Date Edited:   4/7/2025
 ## Notes:         Input file to assign global lists for rating variable names in each year
 ########################################################################################
 

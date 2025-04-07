@@ -2,190 +2,6 @@
 ## Read and clean data basic premium and deductible information
 #########################################################################  
 
-## Raw 2007 data
-ma.path.2007=paste0("data/input/ma-plan-characteristics/2007 MA Landscape Source File 11-16-06.csv")
-ma.data.2007=read_csv(ma.path.2007,
-                      skip=4,
-                      col_names=c("state","county","org_name","plan_name","plan_type","premium","drug_premium","partd_deductible",
-                                  "drug_type","gap_coverage","variable_drug_copay","drug_type_detail","demo_type","contractid",
-                                  "planid","segmentid"),
-                      col_types = cols(
-                        state = col_character(),
-                        county = col_character(),
-                        org_name = col_character(),
-                        plan_name = col_character(),
-                        plan_type = col_character(),
-                        premium = col_number(),
-                        drug_premium = col_number(),
-                        partd_deductible = col_number(),
-                        drug_type = col_character(),
-                        gap_coverage = col_character(),
-                        variable_drug_copay = col_character(),
-                        drug_type_detail = col_character(),
-                        demo_type = col_character(),
-                        contractid = col_character(),
-                        planid = col_double(),
-                        segmentid = col_double() ))
-
-macd.path.2007=paste0("data/input/ma-plan-characteristics/Medicare Part D 2007 Plan Report 12-06-06.xls")
-macd.data.2007=read_xls(macd.path.2007,
-                        range="A5:AC49252",
-                        col_names=c("state","county","org_name","plan_name","contractid","planid","segmentid",
-                                    "org_type","plan_type","snp","snp_type","benefit_type","below_benchmark",
-                                    "national_pdp","partd_rein_demo","partd_rein_demo_type","premium_partc",
-                                    "premium_partd_basic","premium_partd_supp","premium_partd_total",
-                                    "partd_assist_full","nothing","partd_assist_75","partd_assist_50","partd_assist_25",
-                                    "partd_deductible","increase_coverage_limit","gap_coverage","gap_coverage_type"))
-
-## Raw 2008 data
-ma.path.2008a=paste0("data/input/ma-plan-characteristics/2008LandscapeSourceData_MA_09_25_07(A-M).csv")
-ma.data.2008a=read_csv(ma.path.2008a,
-                       skip=5,
-                       col_names=c("state","county","org_name","plan_name","plan_type","premium","partd_deductible",
-                                   "drug_type","gap_coverage","drug_type_detail","demo_type","contractid",
-                                   "planid","segmentid"),
-                       col_types = cols(
-                         state = col_character(),
-                         county = col_character(),
-                         org_name = col_character(),
-                         plan_name = col_character(),
-                         plan_type = col_character(),
-                         premium = col_number(),
-                         partd_deductible = col_number(),
-                         drug_type = col_character(),
-                         gap_coverage = col_character(),
-                         drug_type_detail = col_character(),
-                         demo_type = col_character(),
-                         contractid = col_character(),
-                         planid = col_double(),
-                         segmentid = col_double() ))
-
-
-ma.path.2008b=paste0("data/input/ma-plan-characteristics/2008LandscapeSourceData_MA_09_25_07(N-W).csv")
-ma.data.2008b=read_csv(ma.path.2008b,
-                       skip=5,
-                       col_names=c("state","county","org_name","plan_name","plan_type","premium","partd_deductible",
-                                   "drug_type","gap_coverage","drug_type_detail","demo_type","contractid",
-                                   "planid","segmentid"),
-                       col_types = cols(
-                         state = col_character(),
-                         county = col_character(),
-                         org_name = col_character(),
-                         plan_name = col_character(),
-                         plan_type = col_character(),
-                         premium = col_number(),
-                         partd_deductible = col_number(),
-                         drug_type = col_character(),
-                         gap_coverage = col_character(),
-                         drug_type_detail = col_character(),
-                         demo_type = col_character(),
-                         contractid = col_character(),
-                         planid = col_double(),
-                         segmentid = col_double() ))
-
-
-ma.data.2008 = rbind(ma.data.2008a,ma.data.2008b)
-
-
-macd.path.2008a=paste0("data/input/ma-plan-characteristics/Medicare Part D 2008 Plan Report 11-06-07.xls")
-macd.data.2008a=read_xls(macd.path.2008a,
-                         range="A5:AC39471",
-                         sheet="Alabama to Montana",
-                         col_names=c("state","county","org_name","plan_name","contractid","planid","segmentid",
-                                     "org_type","plan_type","snp","snp_type","benefit_type","below_benchmark",
-                                     "national_pdp","partd_rein_demo","partd_rein_demo_type","premium_partc",
-                                     "premium_partd_basic","premium_partd_supp","premium_partd_total",
-                                     "pard_assist_full","nothing","partd_assist_75","partd_assist_50","partd_assist_25",
-                                     "partd_deductible","increase_coverage_limit","gap_coverage","gap_coverage_type"))
-
-macd.path.2008b=paste0("data/input/ma-plan-characteristics/Medicare Part D 2008 Plan Report 11-06-07.xls")
-macd.data.2008b=read_xls(macd.path.2008b,
-                         range="A5:AC44708",
-                         sheet="Nebraska to Wyoming",
-                         col_names=c("state","county","org_name","plan_name","contractid","planid","segmentid",
-                                     "org_type","plan_type","snp","snp_type","benefit_type","below_benchmark",
-                                     "national_pdp","partd_rein_demo","partd_rein_demo_type","premium_partc",
-                                     "premium_partd_basic","premium_partd_supp","premium_partd_total",
-                                     "pard_assist_full","nothing","partd_assist_75","partd_assist_50","partd_assist_25",
-                                     "partd_deductible","increase_coverage_limit","gap_coverage","gap_coverage_type"))
-
-macd.data.2008 = rbind(macd.data.2008a,macd.data.2008b)
-
-
-
-## Raw 2009 data
-ma.path.2009a=paste0("data/input/ma-plan-characteristics/2009LandscapeSourceData_MA_11_05_08_A_to_M.csv")
-ma.data.2009a=read_csv(ma.path.2009a,
-                       skip=5,
-                       col_names=c("state","county","org_name","plan_name","plan_type","premium","partd_deductible",
-                                   "drug_type","gap_coverage","drug_type_detail","demo_type","contractid",
-                                   "planid","segmentid"),
-                       col_types = cols(
-                         state = col_character(),
-                         county = col_character(),
-                         org_name = col_character(),
-                         plan_name = col_character(),
-                         plan_type = col_character(),
-                         premium = col_number(),
-                         partd_deductible = col_number(),
-                         drug_type = col_character(),
-                         gap_coverage = col_character(),
-                         drug_type_detail = col_character(),
-                         demo_type = col_character(),
-                         contractid = col_character(),
-                         planid = col_double(),
-                         segmentid = col_double() ))
-
-
-ma.path.2009b=paste0("data/input/ma-plan-characteristics/2009LandscapeSourceData_MA_11_05_08_N_to_W.csv")
-ma.data.2009b=read_csv(ma.path.2009b,
-                       skip=5,
-                       col_names=c("state","county","org_name","plan_name","plan_type","premium","partd_deductible",
-                                   "drug_type","gap_coverage","drug_type_detail","demo_type","contractid",
-                                   "planid","segmentid"),
-                       col_types = cols(
-                         state = col_character(),
-                         county = col_character(),
-                         org_name = col_character(),
-                         plan_name = col_character(),
-                         plan_type = col_character(),
-                         premium = col_number(),
-                         partd_deductible = col_number(),
-                         drug_type = col_character(),
-                         gap_coverage = col_character(),
-                         drug_type_detail = col_character(),
-                         demo_type = col_character(),
-                         contractid = col_character(),
-                         planid = col_double(),
-                         segmentid = col_double() ))
-
-ma.data.2009 = rbind(ma.data.2009a,ma.data.2009b)
-
-
-macd.path.2009a=paste0("data/input/ma-plan-characteristics/Medicare Part D 2009 Plan Report 11-03-08.xls")
-macd.data.2009a=read_xls(macd.path.2009a,
-                         range="A5:AB33304",
-                         sheet="Alabama to Montana",
-                         col_names=c("state","county","org_name","plan_name","contractid","planid","segmentid",
-                                     "org_type","plan_type","snp","snp_type","benefit_type","below_benchmark",
-                                     "national_pdp","partd_rein_demo","partd_rein_demo_type","premium_partc",
-                                     "premium_partd_basic","premium_partd_supp","premium_partd_total",
-                                     "pard_assist_full","partd_assist_75","partd_assist_50","partd_assist_25",
-                                     "partd_deductible","increase_coverage_limit","gap_coverage","gap_coverage_type"))
-
-macd.path.2009b=paste0("data/input/ma-plan-characteristics/Medicare Part D 2009 Plan Report 11-03-08.xls")
-macd.data.2009b=read_xls(macd.path.2009b,
-                         range="A5:AB40219",
-                         sheet="Nebraska to Wyoming",
-                         col_names=c("state","county","org_name","plan_name","contractid","planid","segmentid",
-                                     "org_type","plan_type","snp","snp_type","benefit_type","below_benchmark",
-                                     "national_pdp","partd_rein_demo","partd_rein_demo_type","premium_partc",
-                                     "premium_partd_basic","premium_partd_supp","premium_partd_total",
-                                     "pard_assist_full","partd_assist_75","partd_assist_50","partd_assist_25",
-                                     "partd_deductible","increase_coverage_limit","gap_coverage","gap_coverage_type"))
-macd.data.2009 = rbind(macd.data.2009a,macd.data.2009b)
-
-
 ## Raw 2010 data
 ma.path.2010a=paste0("data/input/ma-plan-characteristics/2010LandscapeSourceData_MA_12_01_09_A_to_M.csv")
 ma.data.2010a=read_csv(ma.path.2010a,
@@ -262,8 +78,6 @@ macd.data.2010b=read_xls(macd.path.2010b,
                                      "gap_coverage","gap_coverage_type"))
 macd.data.2010 = rbind(macd.data.2010a,macd.data.2010b)
 
-
-
 ## Raw 2011 data
 ma.path.2011a=paste0("data/input/ma-plan-characteristics/2011LandscapeSourceData_MA_12_17_10_AtoM.csv")
 ma.data.2011a=read_csv(ma.path.2011a,
@@ -338,10 +152,6 @@ macd.data.2011b=read_xls(macd.path.2011b,
                                      "partd_deductible","deductible_exclusions","increase_coverage_limit",
                                      "gap_coverage","gap_coverage_type"))
 macd.data.2011 = rbind(macd.data.2011a,macd.data.2011b)
-
-
-
-
 
 ## Raw 2012 data
 ma.path.2012a=paste0("data/input/ma-plan-characteristics/2012LandscapeSourceData_MA_3_08_12_AtoM.csv")
@@ -419,9 +229,6 @@ macd.data.2012b=read_xls(macd.path.2012b,
                                      "gap_coverage","gap_coverage_type"))
 macd.data.2012 = rbind(macd.data.2012a,macd.data.2012b)
 
-
-
-
 ## Raw 2013 data
 ma.path.2013a=paste0("data/input/ma-plan-characteristics/2013LandscapeSource file MA_AtoM 11212012.csv")
 ma.data.2013a=read_csv(ma.path.2013a,
@@ -498,8 +305,6 @@ macd.data.2013b=read_xls(macd.path.2013b,
                                      "gap_coverage","gap_coverage_type"))
 macd.data.2013 = rbind(macd.data.2013a,macd.data.2013b)
 
-
-
 ## Raw 2014 data
 ma.path.2014a=paste0("data/input/ma-plan-characteristics/2014LandscapeSource file MA_AtoM 05292014.csv")
 ma.data.2014a=read_csv(ma.path.2014a,
@@ -574,8 +379,6 @@ macd.data.2014b=read_xls(macd.path.2014b,
                                      "partd_deductible","deductible_exclusions","increase_coverage_limit",
                                      "gap_coverage","gap_coverage_type"))
 macd.data.2014 = rbind(macd.data.2014a,macd.data.2014b)
-
-
 
 ## Raw 2015 data
 ma.path.2015a=paste0("data/input/ma-plan-characteristics/2015LandscapeSource file MA_AtoM 11042014.csv")
@@ -652,7 +455,7 @@ macd.data.2015b=read_xls(macd.path.2015b,
 macd.data.2015 = rbind(macd.data.2015a,macd.data.2015b)
 
 
-for (y in 2007:2015) {
+for (y in 2010:2015) {
 
   ############ CLEAN MA-Only Data #####################
   ma.data=get(paste0("ma.data.",y))
@@ -699,7 +502,7 @@ for (y in 2007:2015) {
     full_join(macd.data, by=c("contractid", "planid", "state", "county")) %>%
     mutate(year=y)
   
-  if (y==2007) {
+  if (y==2010) {
     plan.premiums=ma.macd.data
   } else {
     plan.premiums=rbind(plan.premiums,ma.macd.data)

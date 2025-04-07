@@ -75,7 +75,6 @@ bench.data.2015 = bench.data.2015 %>%
          year=2015)
 
 
-benchmark.final=rbind(bench.data.2007, bench.data.2008, bench.data.2009,
-                      bench.data.2010, bench.data.2011, bench.data.2012,
+benchmark.final=rbind(bench.data.2010, bench.data.2011, bench.data.2012,
                       bench.data.2013, bench.data.2014, bench.data.2015)
 write_rds(benchmark.final,"/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/ma_benchmark.rds")

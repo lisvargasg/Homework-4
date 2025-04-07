@@ -60,8 +60,7 @@ ffs.costs <- ffs.data %>%
 
 assign(paste("ffs.costs.",2015,sep=""),ffs.costs)
 
-ffs.costs.final=rbind(ffs.costs.2007, ffs.costs.2008, ffs.costs.2009,
-                      ffs.costs.2010, ffs.costs.2011, ffs.costs.2012,
+ffs.costs.final=rbind(ffs.costs.2010, ffs.costs.2011, ffs.costs.2012,
                       ffs.costs.2013, ffs.costs.2014, ffs.costs.2015)
 
 write_rds(ffs.costs.final,"/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/ffs_costs.rds")

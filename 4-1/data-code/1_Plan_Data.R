@@ -79,7 +79,7 @@ for (y in 2010:2015) {
   
   write_rds(plan.year,paste0("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/ma_data_",y,".rds"))}
 
-full.ma.data <- read_rds("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/ma_data_,"y,".rds")
+full.ma.data <- read_rds("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/ma_data_2010.rds")
 for (y in 2010:2015) {
   full.ma.data <- rbind(full.ma.data,read_rds(paste0("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/ma_data_",y,".rds")))}
 
