@@ -34,7 +34,7 @@ pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, readr, readxl, hrbrthemes, 
 
 The following is my submission for Homework 4-1. Note that the setup and analysis for these responses are in a seperate `R` script. The GitHub repository for this work is available [here](https://github.com/lisvargasg/Homework-4.git).
 
-This assignment presented particular challenges as my laptop broke last week, and I had to navigate many issues with GitHub. I apologize for the delay, but I just got it working (yay!). My future submissions will be more refined. 
+This assignment presented particular challenges as my laptop broke last week and I had to navigate many issues with GitHub. I apologize for the delay, but I just got it working (yay!). My future submissions will be more refined. 
 
 \newpage
 # Summarize the Data
