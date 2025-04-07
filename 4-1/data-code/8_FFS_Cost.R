@@ -7,7 +7,6 @@ ffs.path.2010=paste0("data/input/ffs-costs/aged10.csv")
 ffs.path.2011=paste0("data/input/ffs-costs/aged11.csv")
 ffs.path.2012=paste0("data/input/ffs-costs/aged12.csv")
 ffs.path.2013=paste0("data/input/ffs-costs/aged13.csv")
-ffs.path.2014=paste0("data/input/ffs-costs/aged14.csv")
 ffs.path.2015=paste0("data/input/ffs-costs/FFS15.xlsx")
 
 drops=array(dim=c(9,2))
