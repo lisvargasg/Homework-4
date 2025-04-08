@@ -95,6 +95,33 @@ q4 <- ggplot(average_share_by_year, aes(x = year, y = avg_share)) +
   ) +
   theme_minimal()
 
+# Question 5 -------------------------------------------------------------
+# Calculate the running variable (star rating) based on partc_score and partcd_score
+final.data <- final.data %>%
+  mutate(Star_Rating = case_when(
+    partd == "No" ~ partc_score,  # If no Part D, use Part C score
+    partd == "Yes" & is.na(partcd_score) ~ partc_score,  # If Part D but no Part D score, use Part C score
+    partd == "Yes" & !is.na(partcd_score) ~ partcd_score,  # If Part D and Part D score is available, use it
+    TRUE ~ NA_real_))
+
+# Round the calculated star rating and assign to the nearest category
+final.data <- final.data %>%
+  mutate(star_rounded = case_when(
+    Star_Rating >= 3.0 & Star_Rating < 3.5 ~ 3,
+    Star_Rating >= 3.5 & Star_Rating < 4.0 ~ 3.5,
+    Star_Rating >= 4.0 & Star_Rating < 4.5 ~ 4,
+    Star_Rating >= 4.5 & Star_Rating < 5.0 ~ 4.5,
+    Star_Rating >= 5.0 ~ 5,
+    TRUE ~ NA_real_))
+
+# Count the number of plans in each star rating category
+star_rating_counts <- final.data %>%
+  filter(!is.na(star_rounded)) %>%  # Remove rows with NA in star_rounded
+  group_by(star_rounded) %>%
+  summarize(num_plans = n())
+
+print(star_rating_counts)
+
 ## CREATE WORKSPACE
 rm(list=c("final.data"))
 save.image("/Users/lisbethvargas/Desktop/Homework-4/4-2/hwk4_workspace.Rdata")
