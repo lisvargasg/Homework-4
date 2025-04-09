@@ -1,0 +1,231 @@
+---
+title: "Homework 4"
+subtitle: "Research in Health Economics, Spring 2025"
+author: "Lisbeth Vargas"
+format:
+    pdf: 
+        output-file: "vargas-hwk4-2"
+        output-ext: "pdf"
+        header-includes: 
+            - \usepackage{float}
+            - \floatplacement{table}{H}
+knitr:
+    opts_chunk:
+        warning: false
+
+---
+```{r}
+#| include: false
+#| eval:  true
+
+final.data <- readRDS("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/final_ma_data.rds")
+load("/Users/lisbethvargas/Desktop/Homework-4/4-2/hwk4_workspace.Rdata")
+```
+
+```{r}
+#| include: false
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, readr, readxl, hrbrthemes, fixest,
+               scales, gganimate, gapminder, gifski, png, tufte, plotly, OECD,
+               ggrepel, survey, foreign, devtools, pdftools, kableExtra, modelsummary,
+               kableExtra, knitr, broom)               
+```
+
+The following is my submission for Homework 4. Note that the setup and analysis for these responses are in a seperate `R` script. The GitHub repository for this work is available [here](https://github.com/lisvargasg/Homework-4.git).
+
+\newpage
+# Summarize the Data
+
+\noindent Question 1. Remove all SNPs, 800-series plans, and prescription drug only plans. Provide a box and whisker plot showing the distribution of plan counts by county over time.
+```{r}
+#| echo=FALSE, fig.show='hold'
+q1
+```
+
+Do you think that the number of plans is sufficient, too few, or too many?
+
+The middle 50% of data indicates that the number of plans may be insufficient for coverage in certain counties. Whiskers suggest that there is significant variation in the number of plans between counties; some counties have too many plans while others have too few. It appears that the variation between counties is increasing, leading to greater disparity over time. 
+
+\newpage
+\noindent Question 2. Provide bar graphs showing the distribution of star ratings in 2010, 2012, and 2015. 
+```{r}
+#| echo=FALSE, fig.show='hold'
+q2
+```
+How has this distribution changed over time?
+
+There is a noticeable shift toward the right, meaning more plans now receive ratings of 3 or higher. This means that Medicare Advantage plans have improved in quality over time, likely in response to quality incentive programs. 
+
+\newpage
+\noindent Question 3. Plot the average benchmark payment over time from 2010 through 2015. 
+```{r}
+#| echo=FALSE, fig.show='hold'
+q3
+```
+How much has the average benchmark payment risen over the years? 
+
+Average benchmark payments increased steadily until 2015, where they faced a signficant drop. This reflects several of the provisions of the Affordable Care Act including, but not limited to, reduced pyaments, the star ratings system, and adjustments in how bids were structured.
+
+\newpage
+\noindent Question 4. Plot the average share of Medicare Advantage over time from 2010 through 2015.
+```{r}
+#| echo=FALSE, fig.show='hold'
+q4
+```
+Has Medicare Advantage increased or decreased in popularity? How does this share correlate with benchmark payments? 
+
+The popularity of Medicare Advantage has increased stedily over time -- more eligible beneficiaries are choosing Medicare Advantage plans. There appears to be a positive relationship between MA enrollment and benchmark payments, as benchmark payments must increase to cover all beneficiaries in a plan. This suggests that higher benchmark payments attract more enrollees, with increased enrollment leading to better payments.
+
+\newpage
+# Estimate ATEs
+
+
+\noindent Question 5. Calculate the running variable underlying the star rating. Provide a table showing the number of plans that are rounded up into a 3-star, 3.5-star, 4-star, 4.5-star, and 5-star rating.
+```{r}
+#| echo=FALSE, fig.show='hold'
+data_2010 <- final.data %>%
+             filter(!is.na(avg_enrollment) & year==2010 & !is.na(partc_score)) %>%
+  distinct(contractid, planid, county, .keep_all = TRUE)
+
+data_2010 <- data_2010 %>%
+  mutate(raw_rating=rowMeans(
+    cbind(breastcancer_screen, rectalcancer_screen, cv_diab_cholscreen, glaucoma_test,
+          monitoring, flu_vaccine, pn_vaccine, physical_health, mental_health,
+          osteo_test, physical_monitor, primaryaccess, osteo_manage,
+          diab_healthy, bloodpressure, ra_manage, copd_test, bladder,
+          falling, nodelays, doctor_communicate, carequickly, customer_service,                    
+          overallrating_care, overallrating_plan, complaints_plan, appeals_timely,
+          appeals_review, leave_plan, audit_problems, hold_times, info_accuracy,
+          ttyt_available),
+    na.rm=T)) %>%
+    select(contractid, planid, fips, avg_enrollment, state, county, raw_rating, partc_score,
+         avg_eligibles, avg_enrolled, premium_partc, partd, risk_ab, Star_Rating,
+         bid, avg_ffscost, ma_rate, plan_type) %>% 
+    mutate(mkt_share = avg_enrollment/avg_eligibles, 
+          HMO=str_detect(plan_type, "HMO"))
+
+data_2010 <- data_2010 %>%
+  mutate(
+    rounded_star = case_when(
+      raw_rating >= 4.75 ~ 5,
+      raw_rating >= 4.25 & raw_rating < 4.75 ~ 4.5, 
+      raw_rating >= 3.75 & raw_rating < 4.25 ~ 4,   
+      raw_rating >= 3.25 & raw_rating < 3.75 ~ 3.5,
+      raw_rating >= 2.75 & raw_rating < 3.25 ~ 3,  
+      TRUE ~ NA_real_))
+
+rounded_counts <- data_2010 %>%
+  mutate(rounded_30=ifelse(raw_rating>=2.75 & raw_rating<3.00 & Star_Rating==3.0,1,0), 
+         rounded_35=ifelse(raw_rating>=3.25 & raw_rating<3.50 & Star_Rating==3.5,1,0),
+         rounded_40=ifelse(raw_rating>=3.75 & raw_rating<4.00 & Star_Rating==4.0,1,0),
+         rounded_45=ifelse(raw_rating>=4.25 & raw_rating<4.50 & Star_Rating==4.5,1,0), 
+         rounded_50=ifelse(raw_rating>=4.75 & raw_rating<5.00 & Star_Rating==5.0,1,0)) %>%
+  group_by(Star_Rating) %>% 
+  filter(Star_Rating %in% c(3, 3.5, 4, 4.5, 5)) %>% 
+  summarize(count_30=sum(rounded_30), 
+            count_35=sum(rounded_35), 
+            count_40=sum(rounded_40), 
+            count_45=sum(rounded_45),
+            count_50=sum(rounded_50))%>% 
+  mutate(rounded_up=count_30 + count_35 + count_40 + count_45 + count_50) %>% 
+  select(Star_Rating, rounded_up)
+
+kable(rounded_counts, format = "markdown", col.names = c("Star Rating", "Rounded Up Count"), 
+    caption = "Rounded Up Star Ratings in 2010")
+```
+
+\newpage
+\noindent Question 6. Using the RD estimator with a bandwidth of 0.125, provide an estimate of the effect of receiving a 3-star versus a 2.5 star rating on enrollments. Repeat the exercise to estimate the effects at 3.5 stars.
+```{r}
+#| echo=FALSE, fig.show='hold'
+b <- 0.125
+
+star30 <- lm(mkt_share ~ treat + score, 
+               data = data_2010 %>%
+                 filter(raw_rating >= (2.75 - b),
+                        raw_rating <= (2.75 + b),
+                        Star_Rating %in% c(2.5, 3.0)) %>%
+                 mutate(treat = (Star_Rating == 3), 
+                        score = raw_rating - 2.75))     
+
+star35 <- lm(mkt_share ~ treat + score, 
+                data = data_2010 %>%
+                  filter(raw_rating >= (3.25 - b),
+                         raw_rating <= (3.25 + b),
+                         Star_Rating %in% c(3.0, 3.5)) %>%
+                  mutate(treat = (Star_Rating == 3.5),  
+                         score = raw_rating - 3.25))    
+
+star40 <- lm(mkt_share ~ treat + score, 
+                data = data_2010 %>%
+                  filter(raw_rating >= (3.75 - b),
+                         raw_rating <= (3.75 + b),
+                         Star_Rating %in% c(3.5, 4.0)) %>%
+                  mutate(treat = (Star_Rating == 4.0),  
+                         score = raw_rating - 3.75)) 
+
+q6 <- modelsummary(
+  list(star30, star35, star40),
+  keep = c("treatTRUE", "score"),
+  coef_map = c("treatTRUE" = "Rounded",
+               "score" = "Running Score"),
+  gof_map = c("nobs", "r.squared"))
+```
+
+\newpage
+\noindent Question 7. Repeat your results for bandwidths of 0.1, 0.12, 0.13, 0.14, and 0.15
+```{r}
+#| echo=FALSE, fig.show='hold'
+bandwidths <- c(0.1, 0.12, 0.13, 0.14, 0.15)
+
+results <- list()
+
+for (b in bandwidths) {
+  star30 <- lm(mkt_share ~ treat + score, 
+               data = data_2010 %>%
+                 filter(raw_rating >= (2.75 - b),
+                        raw_rating <= (2.75 + b),
+                        Star_Rating %in% c(2.5, 3.0)) %>%
+                 mutate(treat = (Star_Rating == 3), 
+                        score = raw_rating - 2.75))  
+  star35 <- lm(mkt_share ~ treat + score, 
+               data = data_2010 %>%
+                 filter(raw_rating >= (3.25 - b),
+                        raw_rating <= (3.25 + b),
+                        Star_Rating %in% c(3.0, 3.5)) %>%
+                 mutate(treat = (Star_Rating == 3.5),  
+                        score = raw_rating - 3.25))  
+  
+  star30_estimate <- tidy(star30)$estimate[2]
+  star35_estimate <- tidy(star35)$estimate[2]
+  star30_se <- tidy(star30)$std.error[2]
+  star35_se <- tidy(star35)$std.error[2]
+  
+  results[[as.character(b)]] <- tibble(
+    Bandwidth = b,
+    Comparison = c("2.5 to 3 Star", "3 to 3.5 Star"),
+    Estimate = c(star30_estimate, star35_estimate),
+    StdError = c(star30_se, star35_se))}
+
+results_df <- bind_rows(results)
+
+q7 <- ggplot(results_df, aes(x = Bandwidth, y = Estimate, shape = Comparison)) +
+  geom_point(size = 4, color = "black", fill = "black", stroke = 1.5) + 
+  geom_errorbar(aes(ymin = Estimate - StdError, ymax = Estimate + StdError), width = 0.02, color = "black", size = 1) + 
+  labs(title = "Effect of Star Rating Comparisons across Bandwidths",
+       x = "Bandwidth (in increments)",
+       y = "Estimated Effect on Market Share",
+       shape = "Comparison Type") +
+  scale_shape_manual(values = c(16, 17), labels = c("2.5 to 3 Star", "3 to 3.5 Star")) +  
+  theme_minimal(base_size = 15) +  
+  theme(
+    legend.position = "top", 
+    legend.title = element_text(size = 14, face = "bold"),  
+    legend.text = element_text(size = 12), 
+    axis.title = element_text(size = 14, face = "bold"), 
+    axis.text = element_text(size = 12),  
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5))
+```
+How sensitive are your findings to the choice of bandwidth?
+

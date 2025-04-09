@@ -1,0 +1,271 @@
+# Meta --------------------------------------------------------------------
+# Author:        Lisbeth Vargas
+# Date Created:  4/9/2025
+# Date Edited:   4/9/2025
+# Homework 4-3
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata, scales, knitr, modelsummary, broom)
+
+final.data <- readRDS("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/final_ma_data.rds")
+
+# Question 1 -------------------------------------------------------------
+# Remove SNPs, 800-series plans, and prescription drug-only plans (no Part C)
+filtered_data <- final.data %>%
+  filter(snp == "No",                      # Remove SNPs
+         planid < 800 | planid >= 900,       # Remove 800-series plans
+         !is.na(partc_score))                # Remove prescription drug-only plans (without Part C)
+
+# Calculate the number of plans by county and year
+plan_counts <- filtered_data %>%
+  group_by(county, year) %>%
+  summarize(plan_count = n(), .groups = "drop")
+
+# Create a boxplot to show the distribution of plan counts by county over time
+q1 <- ggplot(plan_counts, aes(x = as.factor(year), y = plan_count, fill = as.factor(year))) +
+  geom_boxplot(outlier.size = 2) +
+  scale_y_log10() + 
+  labs(
+    title = "Distribution of Plan Counts by County Over Time",
+    x = "Year",
+    y = "Log of Plan Count"
+  ) +
+  theme_minimal(base_family = "Times", base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none",)  +
+  scale_fill_grey(start = 0.3, end = 0.7)
+
+# Question 2 -------------------------------------------------------------
+# Filter data for the years 2010, 2012, and 2015
+filtered_data <- final.data %>%
+  filter(year %in% c(2010, 2012, 2015)) %>%
+  filter(!is.na(Star_Rating))
+
+# Plot the distribution of Star_Rating for each year
+q2 <- ggplot(filtered_data, aes(x = factor(Star_Rating))) +
+  geom_bar(fill = "grey", color = "black") +
+  facet_wrap(~ year, scales = "free_y") +
+  labs(
+    title = "Distribution of Star Ratings in 2010, 2012, and 2015",
+    x = "Star Rating",
+    y = "Count",
+    caption = "Data from Centers for Medicare and Medicaid Services") +
+  theme_minimal(base_family = "Times", base_size = 12)
+
+# Question 3 -------------------------------------------------------------
+# Calculate average benchmark payment by year 
+avg_benchmark_data <- final.data %>%
+  filter(year %in% 2010:2015) %>%                # Filter for years 2010 to 2015
+  group_by(year) %>%                             # Group by year
+  summarize(avg_benchmark_payment = mean(ma_rate, na.rm = TRUE))
+
+# Plot the average benchmark payment over time
+q3 <- ggplot(avg_benchmark_data, aes(x = year, y = avg_benchmark_payment)) +
+  geom_line(color = "black") +      
+  geom_point(color = "black") +           
+  labs(
+    title = "Average Benchmark Payment Over Time",
+    x = "Year",
+    y = "Average Benchmark Payment",
+    caption = "Data from Centers for Medicare and Medicaid Services"
+  ) +
+  theme_minimal(base_family = "Times", base_size = 12) +
+  theme(
+    plot.title = element_text(hjust = 0.5),       # Center the title
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotate x-axis labels for better readability
+  )
+
+# Question 4 -------------------------------------------------------------
+# Calculate the share of Medicare Advantage enrollment relative to all Medicare eligibles
+final.data <- final.data %>%
+  mutate(ma_share = (avg_enrolled / avg_eligibles) * 100)
+
+# Calculate the average share by year
+average_share_by_year <- final.data %>%
+  group_by(year) %>%
+  summarize(avg_share = mean(ma_share, na.rm = TRUE))
+
+# Plot the average share over time from 2010 to 2015
+q4 <- ggplot(average_share_by_year, aes(x = year, y = avg_share)) +
+  geom_line(color = "black") +
+  geom_point(color = "black") +
+  labs(
+    title = "Average Share of Medicare Advantage Enrollment",
+    x = "Year",
+    y = "Average Share (%)") +
+  theme_minimal(base_family = "Times", base_size = 12)
+
+## ESTIMATE ATES
+data_2010 <- final.data %>%
+             filter(!is.na(avg_enrollment) & year==2010 & !is.na(partc_score)) %>%
+  distinct(contractid, planid, county, .keep_all = TRUE)
+
+# Question 5 -------------------------------------------------------------
+# Calculate raw rating from multiple quality measures
+data_2010 <- data_2010 %>%
+  mutate(raw_rating=rowMeans(
+    cbind(breastcancer_screen, rectalcancer_screen, cv_diab_cholscreen, glaucoma_test,
+          monitoring, flu_vaccine, pn_vaccine, physical_health, mental_health,
+          osteo_test, physical_monitor, primaryaccess, osteo_manage,
+          diab_healthy, bloodpressure, ra_manage, copd_test, bladder,
+          falling, nodelays, doctor_communicate, carequickly, customer_service,                    
+          overallrating_care, overallrating_plan, complaints_plan, appeals_timely,
+          appeals_review, leave_plan, audit_problems, hold_times, info_accuracy,
+          ttyt_available),
+    na.rm=T)) %>%
+    select(contractid, planid, fips, avg_enrollment, state, county, raw_rating, partc_score,
+         avg_eligibles, avg_enrolled, premium_partc, partd, risk_ab, Star_Rating,
+         bid, avg_ffscost, ma_rate, plan_type) %>% 
+    mutate(mkt_share = avg_enrollment/avg_eligibles, 
+          HMO=str_detect(plan_type, "HMO"))
+
+# Rounding raw_rating to the nearest star rating category
+data_2010 <- data_2010 %>%
+  mutate(
+    rounded_star = case_when(
+      raw_rating >= 4.75 ~ 5,
+      raw_rating >= 4.25 & raw_rating < 4.75 ~ 4.5, 
+      raw_rating >= 3.75 & raw_rating < 4.25 ~ 4,   
+      raw_rating >= 3.25 & raw_rating < 3.75 ~ 3.5,
+      raw_rating >= 2.75 & raw_rating < 3.25 ~ 3,  
+      TRUE ~ NA_real_))
+
+# Count the number of plans rounded up to each star rating
+## Calculate the rounded star ratings 
+rounded_counts <- data_2010 %>%
+  mutate(rounded_30=ifelse(raw_rating>=2.75 & raw_rating<3.00 & Star_Rating==3.0,1,0), 
+         rounded_35=ifelse(raw_rating>=3.25 & raw_rating<3.50 & Star_Rating==3.5,1,0),
+         rounded_40=ifelse(raw_rating>=3.75 & raw_rating<4.00 & Star_Rating==4.0,1,0),
+         rounded_45=ifelse(raw_rating>=4.25 & raw_rating<4.50 & Star_Rating==4.5,1,0), 
+         rounded_50=ifelse(raw_rating>=4.75 & raw_rating<5.00 & Star_Rating==5.0,1,0)) %>%
+  group_by(Star_Rating) %>% 
+  filter(Star_Rating %in% c(3, 3.5, 4, 4.5, 5)) %>% 
+  summarize(count_30=sum(rounded_30), 
+            count_35=sum(rounded_35), 
+            count_40=sum(rounded_40), 
+            count_45=sum(rounded_45),
+            count_50=sum(rounded_50))%>% 
+  mutate(rounded_up=count_30 + count_35 + count_40 + count_45 + count_50) %>% 
+  select(Star_Rating, rounded_up)
+
+kable(rounded_counts, format = "markdown", col.names = c("Star Rating", "Count"), 
+    caption = "Rounded Star Ratings in 2010")
+
+# Question 6 -------------------------------------------------------------
+# Set bandwidth
+b <- 0.125
+
+# Estimate the effect of receiving a 3-star rating vs 2.5-star rating
+star30 <- lm(mkt_share ~ treat + score, 
+               data = data_2010 %>%
+                 filter(raw_rating >= (2.75 - b),
+                        raw_rating <= (2.75 + b),
+                        Star_Rating %in% c(2.5, 3.0)) %>%
+                 mutate(treat = (Star_Rating == 3), 
+                        score = raw_rating - 2.75))     
+
+# Estimate the effect of receiving a 3.5-star rating vs 3-star rating
+star35 <- lm(mkt_share ~ treat + score, 
+                data = data_2010 %>%
+                  filter(raw_rating >= (3.25 - b),
+                         raw_rating <= (3.25 + b),
+                         Star_Rating %in% c(3.0, 3.5)) %>%
+                  mutate(treat = (Star_Rating == 3.5),  
+                         score = raw_rating - 3.25))    
+
+# Estimate the effect of receiving a 4-star rating vs 3.5-star rating
+star40 <- lm(mkt_share ~ treat + score, 
+                data = data_2010 %>%
+                  filter(raw_rating >= (3.75 - b),
+                         raw_rating <= (3.75 + b),
+                         Star_Rating %in% c(3.5, 4.0)) %>%
+                  mutate(treat = (Star_Rating == 4.0),  
+                         score = raw_rating - 3.75)) 
+
+# Create a summary table for all comparisons
+q6 <- modelsummary(
+  list(star30, star35, star40),
+  keep = c("treatTRUE", "score"),
+  coef_map = c("treatTRUE" = "Rounded",
+               "score" = "Running Score"),
+  gof_map = c("nobs", "r.squared"),
+  column_labels = c("2.5-3", "3-3.5", "3.5-4"))
+
+# Question 7 -------------------------------------------------------------
+# Define bandwidths
+bandwidths <- c(0.1, 0.12, 0.13, 0.14, 0.15)
+
+# Initialize an empty list to store results
+results <- list()
+
+# Loop over each bandwidth and estimate the effects for star30 and star35
+for (b in bandwidths) {
+  star30 <- lm(mkt_share ~ treat + score, 
+               data = data_2010 %>%
+                 filter(raw_rating >= (2.75 - b),
+                        raw_rating <= (2.75 + b),
+                        Star_Rating %in% c(2.5, 3.0)) %>%
+                 mutate(treat = (Star_Rating == 3), 
+                        score = raw_rating - 2.75))  
+  star35 <- lm(mkt_share ~ treat + score, 
+               data = data_2010 %>%
+                 filter(raw_rating >= (3.25 - b),
+                        raw_rating <= (3.25 + b),
+                        Star_Rating %in% c(3.0, 3.5)) %>%
+                 mutate(treat = (Star_Rating == 3.5),  
+                        score = raw_rating - 3.25))  
+  
+  # Extract the coefficients (estimates) and standard errors for 'treat' from each model
+  star30_estimate <- tidy(star30)$estimate[2]
+  star35_estimate <- tidy(star35)$estimate[2]
+  star30_se <- tidy(star30)$std.error[2]
+  star35_se <- tidy(star35)$std.error[2]
+  
+  # Store the results for both star30 and star35 with bandwidth
+  results[[as.character(b)]] <- tibble(
+    Bandwidth = b,
+    Comparison = c("2.5 to 3 Star", "3 to 3.5 Star"),
+    Estimate = c(star30_estimate, star35_estimate),
+    StdError = c(star30_se, star35_se)
+  )}
+
+# Combine all the results into a single dataframe
+results_df <- bind_rows(results)
+
+# Plot the results 
+q7 <- ggplot(results_df, aes(x = Bandwidth, y = Estimate, shape = Comparison)) +
+  geom_point(size = 4, color = "black", fill = "black", stroke = 1.5) + 
+  geom_errorbar(aes(ymin = Estimate - StdError, ymax = Estimate + StdError), 
+                width = 0.001, color = "black", size = 1) + 
+  labs(title = "Effect of Star Rating Comparisons across Bandwidths",
+       x = "Bandwidth",
+       y = "Estimated Effect on Market Share",
+       shape = "Comparison Type") +
+  scale_shape_manual(values = c(16, 17), labels = c("2.5 to 3 Star", "3 to 3.5 Star")) +  
+  theme_minimal(base_family = "Times") +  
+  theme(
+    legend.position = "top", 
+    legend.title = element_text(face = "plain", size = 12),  
+    legend.text = element_text(face = "plain", size = 10), 
+    axis.title = element_text(face = "plain", size = 12),  
+    axis.text = element_text(face = "plain", size = 10),  
+    plot.title = element_text(face = "plain", size = 14, hjust = 0.5))
+    
+# Question 8 -------------------------------------------------------------
+# Create a density plot for 'raw_rating' with vertical lines for each rounding threshold
+q8 <- ggplot(data_2010, aes(x = raw_rating)) +
+  geom_density(fill = "grey", alpha = 0.5) +
+  geom_vline(xintercept = 2.75, color = "black", linetype = "dashed", size = 0.5) +  
+  geom_vline(xintercept = 3.25, color = "black", linetype = "dashed", size = 0.5) +  
+  geom_vline(xintercept = 3.75, color = "black", linetype = "dashed", size = 0.5) +  
+  geom_vline(xintercept = 4.25, color = "black", linetype = "dashed", size = 0.5) + 
+  geom_vline(xintercept = 4.75, color = "black", linetype = "dashed", size = 0.5) + 
+  labs(title = "Distribution of Raw Ratings with Rounding Thresholds",
+       x = "Raw Rating", y = "Density") +
+  theme_minimal(base_family = "Times")
+
+# Question 9  -------------------------------------------------------------
+
+
+## CREATE WORKSPACE
+rm(list=c("final.data"))
+save.image("/Users/lisbethvargas/Desktop/Homework-4/4-3/hwk4_workspace.Rdata")

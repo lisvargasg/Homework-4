@@ -1,0 +1,100 @@
+# Meta --------------------------------------------------------------------
+# Author:        Lisbeth Vargas
+# Date Created:  4/7/2025
+# Date Edited:   4/7/2025
+# Homework 4-1
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata, scales)
+
+final.data <- readRDS("/Users/lisbethvargas/Desktop/Homework-4/4-1/data/output/final_ma_data.rds")
+
+# Question 1 -------------------------------------------------------------
+# Remove SNPs, 800-series plans, and prescription drug-only plans (no Part C)
+filtered_data <- final.data %>%
+  filter(snp == "No",                      # Remove SNPs
+         planid < 800 | planid >= 900,       # Remove 800-series plans
+         !is.na(partc_score))                # Remove prescription drug-only plans (without Part C)
+
+# Calculate the number of plans by county and year
+plan_counts <- filtered_data %>%
+  group_by(county, year) %>%
+  summarize(plan_count = n(), .groups = "drop")
+
+# Create a boxplot to show the distribution of plan counts by county over time
+q1 <- ggplot(plan_counts, aes(x = as.factor(year), y = plan_count, fill = as.factor(year))) +
+  geom_boxplot() +
+  scale_y_log10() +  # Apply log transformation to y-axis if needed (to handle outliers)
+  labs(
+    title = "Distribution of Plan Counts by County Over Time",
+    x = "Year",
+    y = "Log of Plan Count"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+# Question 2 -------------------------------------------------------------
+# Filter data for the years 2010, 2012, and 2015
+filtered_data <- final.data %>%
+  filter(year %in% c(2010, 2012, 2015)) %>%
+  filter(!is.na(Star_Rating))
+
+# Plot the distribution of Star_Rating for each year
+q2 <- ggplot(filtered_data, aes(x = factor(Star_Rating))) +
+  geom_bar(fill = "steelblue", color = "black") +
+  facet_wrap(~ year, scales = "free_y") +
+  labs(
+    title = "Distribution of Star Ratings in 2010, 2012, and 2015",
+    x = "Star Rating",
+    y = "Count",
+    caption = "Data from Medicare Advantage plans"
+  ) +
+  theme_minimal()
+
+# Question 3 -------------------------------------------------------------
+# Calculate average benchmark payment by year 
+avg_benchmark_data <- final.data %>%
+  filter(year %in% 2010:2015) %>%                # Filter for years 2010 to 2015
+  group_by(year) %>%                             # Group by year
+  summarize(avg_benchmark_payment = mean(ma_rate, na.rm = TRUE))
+
+# Plot the average benchmark payment over time
+q3 <- ggplot(avg_benchmark_data, aes(x = year, y = avg_benchmark_payment)) +
+  geom_line(color = "black", size = 1.2) +        # Line plot for average benchmark payments
+  geom_point(color = "black", size = 3) +           # Red dots at each year for visibility
+  labs(
+    title = "Average Benchmark Payment Over Time",
+    x = "Year",
+    y = "Average Benchmark Payment",
+    caption = "Data from Medicare Advantage Plans"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),       # Center the title
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotate x-axis labels for better readability
+  )
+
+# Question 4 -------------------------------------------------------------
+# Calculate the share of Medicare Advantage enrollment relative to all Medicare eligibles
+final.data <- final.data %>%
+  mutate(ma_share = (avg_enrolled / avg_eligibles) * 100)
+
+# Calculate the average share by year
+average_share_by_year <- final.data %>%
+  group_by(year) %>%
+  summarize(avg_share = mean(ma_share, na.rm = TRUE))
+
+# Plot the average share over time from 2010 to 2015
+q4 <- ggplot(average_share_by_year, aes(x = year, y = avg_share)) +
+  geom_line(color = "black") +
+  geom_point(color = "black") +
+  labs(
+    title = "Average Share of Medicare Advantage Enrollment",
+    x = "Year",
+    y = "Average Share of Medicare Advantage Enrollment (%)"
+  ) +
+  theme_minimal()
+
+## CREATE WORKSPACE
+rm(list=c("final.data"))
+save.image("/Users/lisbethvargas/Desktop/Homework-4/4-1/analysis/hwk4_workspace.Rdata")
