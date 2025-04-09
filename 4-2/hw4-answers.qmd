@@ -29,7 +29,7 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, readr, readxl, hrbrthemes, fixest,
                scales, gganimate, gapminder, gifski, png, tufte, plotly, OECD,
                ggrepel, survey, foreign, devtools, pdftools, kableExtra, modelsummary,
-               kableExtra)               
+               kableExtra, knitr)               
 ```
 
 The following is my submission for Homework 4. Note that the setup and analysis for these responses are in a seperate `R` script. The GitHub repository for this work is available [here](https://github.com/lisvargasg/Homework-4.git).
@@ -84,26 +84,100 @@ The popularity of Medicare Advantage has increased stedily over time -- more eli
 \noindent Question 5. Calculate the running variable underlying the star rating. Provide a table showing the number of plans that are rounded up into a 3-star, 3.5-star, 4-star, 4.5-star, and 5-star rating.
 ```{r}
 #| echo=FALSE, fig.show='hold'
-final.data <- final.data %>%
-  mutate(Star_Rating = case_when(
-    partd == "No" ~ partc_score, 
-    partd == "Yes" & is.na(partcd_score) ~ partc_score, 
-    partd == "Yes" & !is.na(partcd_score) ~ partcd_score,  
-    TRUE ~ NA_real_))
+data_2010 <- final.data %>%
+             filter(!is.na(avg_enrollment) & year==2010 & !is.na(partc_score)) %>%
+  distinct(contractid, planid, county, .keep_all = TRUE)
 
-final.data <- final.data %>%
-  mutate(star_rounded = case_when(
-    Star_Rating >= 3.0 & Star_Rating < 3.5 ~ 3,
-    Star_Rating >= 3.5 & Star_Rating < 4.0 ~ 3.5,
-    Star_Rating >= 4.0 & Star_Rating < 4.5 ~ 4,
-    Star_Rating >= 4.5 & Star_Rating < 5.0 ~ 4.5,
-    Star_Rating >= 5.0 ~ 5,
-    TRUE ~ NA_real_))
+data_2010 <- data_2010 %>%
+  mutate(raw_rating=rowMeans(
+    cbind(breastcancer_screen, rectalcancer_screen, cv_diab_cholscreen, glaucoma_test,
+          monitoring, flu_vaccine, pn_vaccine, physical_health, mental_health,
+          osteo_test, physical_monitor, primaryaccess, osteo_manage,
+          diab_healthy, bloodpressure, ra_manage, copd_test, bladder,
+          falling, nodelays, doctor_communicate, carequickly, customer_service,                    
+          overallrating_care, overallrating_plan, complaints_plan, appeals_timely,
+          appeals_review, leave_plan, audit_problems, hold_times, info_accuracy,
+          ttyt_available),
+    na.rm=T)) %>%
+    select(contractid, planid, fips, avg_enrollment, state, county, raw_rating, partc_score,
+         avg_eligibles, avg_enrolled, premium_partc, partd, risk_ab, Star_Rating,
+         bid, avg_ffscost, ma_rate, plan_type) %>% 
+    mutate(mkt_share = avg_enrollment/avg_eligibles, 
+          HMO=str_detect(plan_type, "HMO"))
 
-star_rating_counts <- final.data %>%
-  filter(!is.na(star_rounded)) %>% 
-  group_by(star_rounded) %>%
-  summarize(num_plans = n())
+data_2010 <- data_2010 %>%
+  mutate(
+    rounded_star = case_when(
+      raw_rating >= 4.75 ~ 5,
+      raw_rating >= 4.25 & raw_rating < 4.75 ~ 4.5, 
+      raw_rating >= 3.75 & raw_rating < 4.25 ~ 4,   
+      raw_rating >= 3.25 & raw_rating < 3.75 ~ 3.5,
+      raw_rating >= 2.75 & raw_rating < 3.25 ~ 3,  
+      TRUE ~ NA_real_))
 
-print(star_rating_counts)
+rounded_counts <- data_2010 %>%
+  mutate(rounded_30=ifelse(raw_rating>=2.75 & raw_rating<3.00 & Star_Rating==3.0,1,0), 
+         rounded_35=ifelse(raw_rating>=3.25 & raw_rating<3.50 & Star_Rating==3.5,1,0),
+         rounded_40=ifelse(raw_rating>=3.75 & raw_rating<4.00 & Star_Rating==4.0,1,0),
+         rounded_45=ifelse(raw_rating>=4.25 & raw_rating<4.50 & Star_Rating==4.5,1,0), 
+         rounded_50=ifelse(raw_rating>=4.75 & raw_rating<5.00 & Star_Rating==5.0,1,0)) %>%
+  group_by(Star_Rating) %>% 
+  filter(Star_Rating %in% c(3, 3.5, 4, 4.5, 5)) %>% 
+  summarize(count_30=sum(rounded_30), 
+            count_35=sum(rounded_35), 
+            count_40=sum(rounded_40), 
+            count_45=sum(rounded_45),
+            count_50=sum(rounded_50))%>% 
+  mutate(rounded_up=count_30 + count_35 + count_40 + count_45 + count_50) %>% 
+  select(Star_Rating, rounded_up)
+
+kable(rounded_counts, format = "markdown", col.names = c("Star Rating", "Rounded Up Count"), 
+    caption = "Rounded Up Star Ratings in 2010")
 ```
+
+\newpage
+\noindent Question 6. Using the RD estimator with a bandwidth of 0.125, provide an estimate of the effect of receiving a 3-star versus a 2.5 star rating on enrollments. Repeat the exercise to estimate the effects at 3.5 stars.
+```{r}
+#| echo=FALSE, fig.show='hold'
+b <- 0.125
+
+star30 <- lm(mkt_share ~ treat + score, 
+               data = data_2010 %>%
+                 filter(raw_rating >= (2.75 - b),
+                        raw_rating <= (2.75 + b),
+                        Star_Rating %in% c(2.5, 3.0)) %>%
+                 mutate(treat = (Star_Rating == 3), 
+                        score = raw_rating - 2.75))     
+
+star35 <- lm(mkt_share ~ treat + score, 
+                data = data_2010 %>%
+                  filter(raw_rating >= (3.25 - b),
+                         raw_rating <= (3.25 + b),
+                         Star_Rating %in% c(3.0, 3.5)) %>%
+                  mutate(treat = (Star_Rating == 3.5),  
+                         score = raw_rating - 3.25))    
+
+star40 <- lm(mkt_share ~ treat + score, 
+                data = data_2010 %>%
+                  filter(raw_rating >= (3.75 - b),
+                         raw_rating <= (3.75 + b),
+                         Star_Rating %in% c(3.5, 4.0)) %>%
+                  mutate(treat = (Star_Rating == 4.0),  
+                         score = raw_rating - 3.75)) 
+
+q6 <- modelsummary(
+  list(star30, star35, star40),
+  keep = c("treatTRUE", "score"),
+  coef_map = c("treatTRUE" = "Rounded",
+               "score" = "Running Score"),
+  gof_map = c("nobs", "r.squared"))
+```
+
+\newpage
+\noindent Question 7. Repeat your results for bandwidths of 0.1, 0.12, 0.13, 0.14, and 0.15
+```{r}
+#| echo=FALSE, fig.show='hold'
+q7
+```
+How sensitive are your findings to the choice of bandwidth?
+
