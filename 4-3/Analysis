@@ -182,13 +182,16 @@ star40 <- lm(mkt_share ~ treat + score,
                          score = raw_rating - 3.75)) 
 
 # Create a summary table for all comparisons
+models <- list(star30, star35, star40)
+names(models) <- c("2.5–3", "3–3.5", "3.5–4")
+
 q6 <- modelsummary(
-  list(star30, star35, star40),
+  models,
   keep = c("treatTRUE", "score"),
   coef_map = c("treatTRUE" = "Rounded",
                "score" = "Running Score"),
-  gof_map = c("nobs", "r.squared"),
-  column_labels = c("2.5-3", "3-3.5", "3.5-4"))
+  gof_map = c("nobs", "r.squared"), 
+  title = "Effect of Star Rating on Enrollment Near Thresholds")
 
 # Question 7 -------------------------------------------------------------
 # Define bandwidths
@@ -264,7 +267,29 @@ q8 <- ggplot(data_2010, aes(x = raw_rating)) +
   theme_minimal(base_family = "Times")
 
 # Question 9  -------------------------------------------------------------
+# Subset the data for plans just above and below the threshold values
+plans_above_below_threshold <- data_2010 %>%
+  filter((Star_Rating >= 3.4 & Star_Rating < 3.6) |
+    (Star_Rating >= 4.4 & Star_Rating < 4.6))
 
+# Summarize plan characteristics for HMO and Part D status
+plan_characteristics <- plans_above_below_threshold %>%
+  group_by(Star_Rating) %>%
+  summarize(avg_HMO = mean(grepl("HMO", plan_type), na.rm = TRUE),
+    avg_part_d = mean(partd == "Yes", na.rm = TRUE),
+    count = n())
+
+plan_characteristics_clean <- plan_characteristics %>%
+  rename(
+    `Star Rating` = Star_Rating,
+    `Percent HMO Plans` = avg_HMO,
+    `Percent with Part D` = avg_part_d,
+    `Number of Plans` = count) %>%
+  mutate(
+    `Percent HMO Plans` = percent(`Percent HMO Plans`, accuracy = 1),
+    `Percent with Part D` = percent(`Percent with Part D`, accuracy = 1))
+
+kable(plan_characteristics_clean, caption = "Plan Characteristics Around Star Rating Thresholds")
 
 ## CREATE WORKSPACE
 rm(list=c("final.data"))
